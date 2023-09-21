@@ -3,18 +3,11 @@
 from __future__ import print_function
 
 import gtsam
-import gtsam.utils.plot as gtsam_plot
-import matplotlib.pyplot as plt
 import numpy as np
 import tf
-
-
-# Import of the ros
 import rospy
 from nav_msgs.msg import Odometry 
-import math
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-import tf2_ros
 
 # Create noise models
 ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.01, 0.01, 0.09]))
@@ -87,9 +80,6 @@ class Odometry_gtsam_node:
             priorMean = gtsam.Pose2(0.0, 0.0, 0.0)  # prior at origin
             graph.push_back(gtsam.PriorFactorPose2(1, priorMean, PRIOR_NOISE))
 
-            # Add a prior on the first pose, setting it to the origin
-            # A prior factor consists of a mean and a noise model (covariance matrix)
-
             if not poses:
             
                 rospy.loginfo("at the origin")
@@ -101,8 +91,6 @@ class Odometry_gtsam_node:
                 rospy.loginfo("at rest")
 
             else:
-            # Add odometry factors
-
 
                 odometry = gtsam.Pose2(poses[0],poses[1],poses[2])
 
@@ -113,7 +101,7 @@ class Odometry_gtsam_node:
                 parameters.setRelinearizeSkip(1)
                 isam = gtsam.ISAM2(parameters)
                 initial.insert(1,gtsam.Pose2(0.5,0.0,0.2))   
-                 
+
                 current_estimate = initial
 
                 if self.change_time :
@@ -161,15 +149,12 @@ class Odometry_gtsam_node:
                         custom_odom.header.stamp = rospy.Time.now()
                         custom_odom.header.frame_id = 'custom_odom'
                         custom_odom.child_frame_id = 'base_link'
-
-                        # Set your custom values
-                        custom_odom.pose.pose.position.x =    results.x()# Example x position
-                        custom_odom.pose.pose.position.y =    results.y()  # Example y position
-                        custom_odom.pose.pose.orientation.x = result_odom_quaternion[0] # Example quaternion w component
+                        custom_odom.pose.pose.position.x =    results.x()
+                        custom_odom.pose.pose.position.y =    results.y()
+                        custom_odom.pose.pose.orientation.x = result_odom_quaternion[0] 
                         custom_odom.pose.pose.orientation.y = result_odom_quaternion[1]
-                        custom_odom.pose.pose.orientation.z = result_odom_quaternion[2] # Example quaternion w component
+                        custom_odom.pose.pose.orientation.z = result_odom_quaternion[2] 
                         custom_odom.pose.pose.orientation.w = result_odom_quaternion[3]
-                        # Publish the custom Odometry message
                         self.odom_pub.publish(custom_odom)                        
                         # print("result {}" , i)
                         # rospy.loginfo(results.theta())
