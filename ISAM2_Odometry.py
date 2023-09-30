@@ -137,8 +137,11 @@ class Odometry_gtsam_node:
                 initial = gtsam.Values()
 
                 parameters = gtsam.ISAM2Params()
+                parameters.setOptimizationParams(gtsam.ISAM2DoglegParams() ) 
                 parameters.setRelinearizeThreshold(0.1)
                 parameters.setRelinearizeSkip(1)
+                parameters.setEvaluateNonlinearError(True)
+                parameters.setEnablePartialRelinearizationCheck(True)
                 isam = gtsam.ISAM2(parameters)
                 graph.push_back(gtsam.PriorFactorPose2(1, priorMean, PRIOR_NOISE))
 
@@ -164,9 +167,9 @@ class Odometry_gtsam_node:
 
                         rospy.loginfo("in the for loop")
                         rospy.loginfo(i)
-                        rospy.loginfo(poses_array)
-                        rospy.loginfo(between_array)
-                        odometry_1 = gtsam.Pose2(between_array[i][1],between_array[i][1],between_array[i][2])
+                        # rospy.loginfo(poses_array)
+                        # rospy.loginfo(between_array)
+                        odometry_1 = gtsam.Pose2(between_array[i][0],between_array[i][1],between_array[i][2])
                         inital_1 = gtsam.Pose2(poses_array[i][0], poses_array[i][1],poses_array[i][2])
                         rospy.loginfo(odometry_1)
                         rospy.loginfo(inital_1)
@@ -176,6 +179,11 @@ class Odometry_gtsam_node:
                         initial.insert(i+2,inital_1)  
                         isam.update(graph,initial)
                         current_estimate = isam.calculateEstimate()
+                        factor_graph = isam.getFactorsUnsafe()
+
+                        # gtsam.plot2DFactorGraph(factor_graph, current_estimate)
+                        gtsam.writeG2o(factor_graph , current_estimate , 'factor_graph.g2o')
+
                         # if i == 5 :
                         #     j = 0
                         #     while j != i :
@@ -202,7 +210,8 @@ class Odometry_gtsam_node:
                     
                     self.odom_path.poses = []
                     self.odom_path_publisher.publish(self.odom_path)
-                    rospy.loginfo(self.odom_path.poses)
+
+
                         # 5. Calculate and print marginal covariances for all variables
                     for i in range (len(poses_array)):
                         results = current_estimate.atPose2(i+1)
@@ -238,7 +247,7 @@ class Odometry_gtsam_node:
 
                     
                         # rospy.loginfo(results.theta())
-                    if  ((rospy.Time.now() - current_time).to_sec())> 130:
+                    if  ((rospy.Time.now() - current_time).to_sec())> 45:
                         rospy.loginfo("plotting values")
                         a.data = poses_x_values
                         b.data = result_x_values
@@ -257,3 +266,17 @@ if __name__ == "__main__":
     os = Odometry_gtsam_node()
     os.main()
     rospy.spin()
+
+# optimizationParams:                type:              ISAM2DoglegParams
+# optimizationParams:                initialDelta:      1
+# optimizationParams:                wildfireThreshold: 1e-05
+# optimizationParams:                adaptationMode:    SEARCH_EACH_ITERATION
+# relinearizeThreshold:              0.1
+# relinearizeSkip:                   1
+# enableRelinearization:             1
+# evaluateNonlinearError:            1
+# factorization:                     CHOLESKY
+# cacheLinearizedFactors:            1
+# enableDetailedResults:             0
+# enablePartialRelinearizationCheck: 0
+# findUnusedFactorSlots:             0
